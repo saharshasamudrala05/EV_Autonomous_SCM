@@ -1,0 +1,12 @@
+__pycache__/
+.env
+*.pyc
+data/*.csv
+models/*.pkl
+models/*.joblib
+backend/erp_ledger
+node_modules/
+
+venv_scm/
+*.db
+*.log

@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Rajdhani', sans-serif;
+  --font-display: 'Rajdhani', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
