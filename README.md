@@ -5,7 +5,7 @@
 ---
 
 ## System Architecture
-![NEXUS-SCM Architecture](backend/architecture.png) 
+![NEXUS-SCM Architecture](backend/architecture.jpeg) 
 *The system is organized into 5 functional layers, enabling a closed-loop "Observe-Orient-Decide-Act" (OODA) cycle.*
 
 ---
@@ -36,7 +36,7 @@ NEXUS-SCM identifies that Indian EV registrations are downstream of physical eve
 
 ### 2. Stochastic Safety Stock
 Instead of static reorder points, we compute optimal stock levels dynamically:
-$$\text{Optimal Stock} = P90_{\text{demand}} + (Z \times \sigma_{\text{lead\_time}})$$
+$$\text{Optimal Stock} = \text{P90}_{\text{demand}} + (Z \times \sigma_{\text{lead\_time}})$$
 *This prevents stockouts during "Battery Starvation" events identified by the Anomaly Detector.*
 
 ---
