@@ -5,7 +5,7 @@
 ---
 
 ## System Architecture
-![NEXUS-SCM Architecture](backend/architecture.jpeg) 
+![NEXUS-SCM Architecture](backend/assets/architecture.jpeg) 
 *The system is organized into 5 functional layers, enabling a closed-loop "Observe-Orient-Decide-Act" (OODA) cycle.*
 
 ---
