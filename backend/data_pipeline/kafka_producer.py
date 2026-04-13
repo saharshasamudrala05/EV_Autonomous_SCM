@@ -6,11 +6,10 @@ Gracefully falls back to console logging if Kafka is unavailable.
 Run: python data_pipeline/kafka_producer.py
 """
 import sys, os, time, random, json
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from datetime import datetime, timezone
 from rich import print as rprint
-from config import settings
+from backend.config import settings
 
 COUNTRIES = ["India", "China", "USA", "Germany", "Norway", "UK", "France"]
 KAFKA_AVAILABLE = False

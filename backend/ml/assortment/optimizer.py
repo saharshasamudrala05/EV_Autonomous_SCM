@@ -15,24 +15,21 @@ class CommercialAssortmentOptimizer:
 
     def calculate_lcop(self, capacity_gwh: float, capex_per_gwh: float, opex_rate: float, material_cost_per_kwh: float) -> float:
         """
-        Standard IEA methodology for Levelized Cost of Production.
+        Calculates LCOP using (Total Cost / Lifetime Energy Output).
         Returns: $/kWh
         """
-        # Capital Recovery Factor
-        crf = (self.wacc * (1 + self.wacc)**self.lifetime) / ((1 + self.wacc)**self.lifetime - 1)
-        
         total_capex = capacity_gwh * capex_per_gwh
-        annual_capex = total_capex * crf
-        fixed_opex = total_capex * opex_rate
+        fixed_opex_lifetime = total_capex * opex_rate * self.lifetime
         
         # Output assume 85% utilization
         utilization = 0.85
-        annual_output_kwh = capacity_gwh * 1e6 * 1000 * utilization # GWh -> kWh
+        annual_output_kwh = capacity_gwh * 1_000_000 * utilization # GWh -> kWh
+        lifetime_energy = annual_output_kwh * self.lifetime
         
-        variable_opex = annual_output_kwh * material_cost_per_kwh
-        total_annual_cost = annual_capex + fixed_opex + variable_opex
+        variable_opex_lifetime = lifetime_energy * material_cost_per_kwh
+        total_cost = total_capex + fixed_opex_lifetime + variable_opex_lifetime
         
-        return total_annual_cost / annual_output_kwh
+        return total_cost / lifetime_energy
 
     def rank_technologies(self, demand_gwh: float, tech_options: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """

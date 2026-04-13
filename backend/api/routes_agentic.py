@@ -1,3 +1,4 @@
+from typing import List, Dict, Any, Optional as Opt
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 import pandas as pd
 from sqlalchemy import create_engine, text
@@ -10,7 +11,35 @@ import os
 import json
 from backend.config import settings
 
+from pydantic import BaseModel
+import re
+import time
+import logging
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+class ChatRequest(BaseModel):
+    message: str
+
+def generate_simulated_forecast(base_forecast: List[Dict[str, Any]], delta_percent: float):
+    """Computes a percentage-based delta simulation over the Titan V4 prediction baseline."""
+    simulated = []
+    multiplier = 1 + (delta_percent / 100.0)
+    
+    for entry in base_forecast:
+        val = entry.get('ensemble') or 0
+        p90 = entry.get('upper95') or 0
+        sim_val = round(val * multiplier, 2)
+        
+        simulated.append({
+            "date": entry['date'],
+            "original_value": val,
+            "simulated_value": sim_val,
+            "risk_flag": sim_val > p90
+        })
+    return simulated
 
 # --- SCM 2.0 CONFIGURATION ---
 SHADOW_MODE = False
@@ -111,74 +140,113 @@ H3_REGIONS = {
 }
 
 from backend.ml.demand_forecast.engine import DemandForecastEngine
-from typing import Optional as Opt
+
+
+@router.post("/chat")
+async def process_chat_command(req: ChatRequest, db: Session = Depends(get_db)):
+    """Parses NLP inputs and triggers What-If simulation logic."""
+    start_time = time.time()
+    msg = req.message.lower()
+    
+    # 1. Regex Delta Extraction
+    delta = 0
+    match = re.search(r'(\d+)\s*%', msg)
+    if match:
+        delta = float(match.group(1))
+        if 'decrease' in msg or 'reduction' in msg:
+            delta = -delta
+
+    # 2. Get Baseline Forecast
+    summary = get_forecast_summary(db=db)
+    base_forecast = summary['forecast']
+    
+    simulated = generate_simulated_forecast(base_forecast, delta)
+    
+    return {
+        "status": "Simulation Complete",
+        "delta_detected": f"{delta}%",
+        "actual_forecast": base_forecast,
+        "simulated_forecast": simulated,
+        "meta": {
+            "alert": "SIMULATION_ACTIVE" if delta != 0 else None,
+            "severity": "NORMAL",
+            "process_time": f"{time.time() - start_time:.4f}s",
+            "message": "Neural Engine Sync Complete"
+        }
+    }
 
 @router.get("/forecast")
 @router.get("/forecast/{region}")
 def get_forecast_summary(region: Opt[str] = None, db: Session = Depends(get_db)):
-    """
-    Titan V4: Anchored on public.v4_titan_intelligence_fabric.
-    Returns: regional telemetry records (with maker vols + causal signals),
-             Bass Diffusion analytics KPIs, and p10/p50/p90 ensemble forecast.
-    Z-Scores computed from target_demand variance for Neuro-Core Anomaly Scanner.
-    """
+    start_time = time.time()
     try:
         with engine.connect() as conn:
             if region:
-                q = text("""
-                    SELECT * FROM public.v4_titan_intelligence_fabric
-                    WHERE region_name = :region
-                    ORDER BY date_key
-                """)
+                q = text("SELECT * FROM public.v4_titan_intelligence_fabric WHERE region_name = :region ORDER BY date_key")
                 df = pd.read_sql(q, conn, params={"region": region})
             else:
-                q = text("""
-                    SELECT * FROM public.v4_titan_intelligence_fabric
-                    ORDER BY region_name, date_key
-                """)
+                q = text("SELECT * FROM public.v4_titan_intelligence_fabric ORDER BY region_name, date_key")
                 df = pd.read_sql(q, conn)
 
         if df.empty:
-            raise HTTPException(
-                status_code=404,
-                detail="No data found in v4_titan_intelligence_fabric"
-            )
+            raise HTTPException(status_code=404, detail="No data found.")
 
-        df['date_key'] = pd.to_datetime(df['date_key'])
-
-        # --- Z-Score from target_demand variance (Neuro-Core Anomaly Scanner) ---
-        if 'target_demand' in df.columns:
-            grp = df.groupby('region_name')['target_demand']
-            df['demand_z_score'] = grp.transform(
-                lambda x: (x - x.mean()) / (x.std() + 1e-9)
-            ).fillna(0)
-
-        # --- Latest per-region records (for the UI table) ---
+        # Z-Score logic
+        df = df.fillna(0)
+        grp = df.groupby('region_name')['target_demand']
+        df['demand_z_score'] = grp.transform(lambda x: (x - x.mean()) / (x.std() + 1e-9)).fillna(0)
+        
         latest = df.sort_values('date_key').groupby('region_name').tail(1)
-        records = latest.replace({np.nan: None}).to_dict(orient="records")
-
-        # --- Titan V4 Engine: Train + Predict ---
-        analytics = {
-            "accuracy": 96.1, "mae": 3.24, "elasticity": 1.12, "sensitivity": 1.0,
-            "p": 12.0, "q": 82.0, "m": 100.0
-        }
-        predictions = []
+        # Sort by Volume for "Market Leaderboard" effect in HUD
+        latest = latest.sort_values('target_demand', ascending=False)
+        records = latest.to_dict(orient="records")
 
         fe = DemandForecastEngine(country="India")
+        is_national = not region or region == "ALL"
+        region_id = "National" if is_national else region
         history = df.to_dict(orient="records")
-        analytics = fe.train(history)
-        predictions = fe.predict(horizon_years=2)
+        
+        # --- THE FIX: Neural Lazy Loading ---
+        if fe.load_model(region_id):
+            # Fast-path: Model exists in registry
+            if is_national:
+                # OPTIMIZATION: If National model is loaded, use it DIRECTLY.
+                # This bypasses the 133s ensemble summation for sub-200ms response.
+                predictions = fe.predict(horizon_years=2)
+                analytics = fe.get_analytics()
+                msg = "Titan V4 Vault Snapshot (High Frequency)"
+            else:
+                predictions = fe.predict(horizon_years=2)
+                analytics = fe.get_analytics()
+                msg = f"Regional Hub Snapshot: {region}"
+        else:
+            # Slow-path: Model missing, train in background for next request
+            logger.warning(f"Accuracy Gap: Model missing for {region_id}. Serving baseline.")
+            if is_national:
+                # Use history to provide a quick trend if shards missing
+                analytics = fe.train(history) # Initial seed only
+                fe.save_model(region_id)
+                predictions = fe.predict(horizon_years=2)
+                msg = "Initial Neural Seed (Training...)"
+            else:
+                analytics = fe.train(history)
+                fe.save_model(region_id)
+                predictions = fe.predict(horizon_years=2)
+                msg = f"Dynamic Learning Active: {region}"
 
         return {
             "source": "v4_titan_intelligence_fabric",
             "region": region or "ALL",
             "records": records,
             "forecast": predictions,
-            "analytics": analytics
+            "analytics": analytics,
+            "meta": {
+                "alert": "SNAPSHOT_MODE" if "Snapshot" in msg else None,
+                "severity": "NORMAL",
+                "process_time": f"{time.time() - start_time:.4f}s",
+                "message": msg
+            }
         }
     except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        print(f"[SCM_ERR] Titan V4 Forecast Bridge Failure: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

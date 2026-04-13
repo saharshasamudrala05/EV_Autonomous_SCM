@@ -35,6 +35,7 @@ def create_all_tables() -> None:
     import backend.models.demand_signal
     import backend.models.alert
     import backend.models.autonomous_decision
+    import backend.models.network
     # Models are already imported above with backend. prefix
     Base.metadata.create_all(bind=engine)
     print("[OK] All tables created successfully.")

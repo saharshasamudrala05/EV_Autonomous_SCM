@@ -6,14 +6,13 @@ Gracefully works without Kafka (for local dev without Docker Kafka).
 Run: python data_pipeline/kafka_consumer.py
 """
 import sys, os, json, time
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from datetime import datetime, timezone
 from rich import print as rprint
 from config import settings
 from core.database import SessionLocal, check_connection
-from models.demand_signal import DemandSignal, SignalSource
-from models.alert import Alert, AlertType, AlertSeverity
+from backend.models.demand_signal import DemandSignal, SignalSource
+from backend.models.alert import Alert, AlertType, AlertSeverity
 import numpy as np
 from pydantic import BaseModel
 from sklearn.ensemble import IsolationForest
@@ -88,7 +87,7 @@ def init_kafka():
 
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
-from models.warehouse import Inventory
+from backend.models.warehouse import Inventory
 
 def flush_batch(batch: list, db):
     """Processes a micro-batch of telemetry payloads and commits using SQLAlchemy 2.0 Bulk Operations."""

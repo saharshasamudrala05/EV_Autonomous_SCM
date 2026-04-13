@@ -1,37 +1,39 @@
-# ═══════════════════════════════════════════════════════════
+# =============================================================
 #  NEXUS-SCM  |  Backend Python Dependencies
 #  Install: pip install -r requirements.txt
-# ═══════════════════════════════════════════════════════════
+# =============================================================
 
-# ── Web Framework ─────────────────────────────────
+# -- Web Framework ---------------------------------
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
 python-multipart==0.0.12
 
-# ── Database ──────────────────────────────────────
+# -- Database --------------------------------------
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 alembic==1.14.0
 
-# ── Validation & Config ───────────────────────────
+# -- Validation & Config ---------------------------
 pydantic==2.9.2
 pydantic-settings==2.6.1
 python-dotenv==1.0.1
 
-# ── Data Science ──────────────────────────────────
+# -- Data Science ----------------------------------
 pandas==2.2.3
 numpy==1.26.4
 openpyxl==3.1.5
 
-# ── AI / ML (used in Phase 2, installed now) ──────
+# -- AI / ML (used in Phase 2, installed now) ------
 scikit-learn==1.5.2
 prophet==1.1.6
+lightgbm==4.5.0
+joblib==1.4.2
 
-# ── Kafka ─────────────────────────────────────────
+# -- Kafka -----------------------------------------
 confluent-kafka==2.6.0
 
-# ── HTTP Client ───────────────────────────────────
+# -- HTTP Client -----------------------------------
 httpx==0.28.0
 
-# ── Utilities ─────────────────────────────────────
+# -- Utilities -------------------------------------
 rich==13.9.4

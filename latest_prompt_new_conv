@@ -1,0 +1,37 @@
+PROJECT PROFILE: NEXUS-SCM (Supply Chain Digital Twin & Command Center)
+
+1. Backend State (FastAPI + PostgreSQL + Confluent Kafka)
+
+Architecture: High-throughput microservice architecture.
+Layer 5 (Optimized Ingestion): 
+
+api/routes_ingestion.py
+ runs non-blocking async REST ingestion. Incoming 
+
+TelemetryEvent
+ payloads immediately trigger 
+
+send_event
+ and return 202 Accepted without awaiting the DB. 
+
+data_pipeline/kafka_producer.py
+ is fully async (synchronous .poll() and .flush() blockers were removed).
+Layer 4 (Optimized Data Sync): 
+
+data_pipeline/kafka_consumer.py
+ implements high-speed Micro-Batching (500 records or 2.0s triggers). It performs bulk INSERT ... ON CONFLICT DO UPDATE operations using raw SQLAlchemy 2.0 compiler vectors and raw Postgres statements to eliminate procedural ORM bottlenecks. Heavily wrapped in try/except/rollback atomic blocks.
+PostgreSQL Pool: 
+
+core/database.py
+ is configured with pool_size=20 and max_overflow=10 to comfortably handle the micro-batch writes alongside simultaneous frontend read polling.
+2. Frontend State (Nexus UI V2)
+
+Path: A completely separate module located at /nexus-ui-v2/
+Stack: Vite, React 18, Tailwind CSS v4, Three.js, Framer-Motion, and Lucide Icons.
+Status: Fully scaffolded and running flawlessly locally (port 8081). Contains the hyper-advanced "Planetary Command Center" holographic dashboard.
+Critical Fix Applied: src/App.jsx contains custom deep garbage-collection routing and WEBGL_lose_context teardown logic to specifically prevent E_OUTOFMEMORY GPU leakage/freezing during React StrictMode hot-reloads and route swaps.
+Note: The UI numbers are currently visually perfect but use static placeholder data.
+3. Next Immediate Directives (What to work on next):
+
+Action A: Integrate the Layer 3 AI Inference. Inject the persistent Scikit-Learn Isolation Forest model directly into the Kafka micro-batching loop (kafka_consumer.py) to perform high-speed vectorized numpy batch-scoring on inbound telemetry before PostgreSQL insertion.
+Action B: Connect the live Python backend endpoints to nexus-ui-v2. Wire up the new Three.js dashboard to replacing static variables using fetch() and real-time backend WebSockets.

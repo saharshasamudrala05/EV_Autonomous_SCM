@@ -173,3 +173,4 @@ class DemandForecastResponse(BaseModel):
     historical_count: int
     records: List[TitanV4IntelligenceOut]
     analytics: Optional[Dict[str, Any]] = None
+    meta: Optional[Dict[str, Any]] = None

@@ -7,7 +7,6 @@ Run:  python data_pipeline/data_simulator.py
 Stop: Ctrl+C
 """
 import sys, os, time, random, json
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from datetime import datetime, timezone, timedelta
 import os
@@ -20,10 +19,10 @@ def rprint(msg=""):
 
 from core.database import SessionLocal, check_connection
 from core.schemas import TelemetryEvent
-from models.demand_signal import DemandSignal, SignalSource
-from models.alert import Alert, AlertType, AlertSeverity
-from models.warehouse import Inventory
-from models.shipment import Shipment, ShipmentStatus
+from backend.models.demand_signal import DemandSignal, SignalSource
+from backend.models.alert import Alert, AlertType, AlertSeverity
+from backend.models.warehouse import Inventory
+from backend.models.shipment import Shipment, ShipmentStatus
 from config import settings
 
 COUNTRIES = ["India", "China", "USA", "Germany", "UK", "Norway", "France"]

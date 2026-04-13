@@ -14,6 +14,8 @@ from backend.models.warehouse import Facility, Inventory
 from backend.models.shipment import Shipment, ShipmentStatus
 from backend.models.alert import Alert, AlertSeverity
 from backend.models.autonomous_decision import AutonomousDecision
+from backend.models.network import NetworkNode
+from backend.models.product_sku import ProductSKU
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -37,8 +39,8 @@ def get_dashboard_kpis(db: Session = Depends(get_db)):
     avg_risk = db.query(func.avg(Supplier.risk_score)).scalar() or 0.0
 
     # ── Facility / Product Metrics ────────────────────────────
-    total_facilities = db.query(func.count(Facility.id)).scalar() or 0
-    from models.product_sku import ProductSKU
+    # Task 5: Facilities must now be COUNT(DISTINCT node_id) FROM network_nodes
+    total_facilities = db.query(func.count(NetworkNode.node_id)).scalar() or 0
     total_products = db.query(func.count(ProductSKU.id)).scalar() or 0
 
     # ── Inventory Alerts ──────────────────────────────────────
@@ -82,17 +84,19 @@ def get_dashboard_kpis(db: Session = Depends(get_db)):
         if res is not None: latest_battery_signal = float(res)
     except: pass
     
-    # Calculate Import Shortfall (0 if signal >= 100, up to 100 if signal drops)
-    # The V4 target is 100. Signal < 50 triggers the "Starvation" alert.
-    import_shortfall = max(0.0, 100.0 - (latest_battery_signal))
-    critical_stock_factor = min(critical_stock * 5, 100)
-
-    # ── Revised Composite Supply Risk Index (0–100) ───────────
-    # Sovereign Weighted: 30% Supplier + 30% Stock + 40% Asian Import Signal
+    # ── Task 5: Dashboard KPI Intelligence ────────────────────
+    # V1 (30%): Average risk_score from suppliers
+    # V2 (30%): Count of inventory deficit records
+    # V3 (40%): Import Shortfall from (100 - battery_lead_signal)
+    
+    v1_supplier_risk = avg_risk
+    v2_stockout_factor = min(critical_stock * 2, 100) # Scaling for normalization
+    v3_import_shortfall = max(0.0, 100.0 - latest_battery_signal)
+    
     supply_risk_index = round(
-        (avg_risk * 0.3) +
-        (critical_stock_factor * 0.3) +
-        (import_shortfall * 0.4),
+        (v1_supplier_risk * 0.3) +
+        (v2_stockout_factor * 0.3) +
+        (v3_import_shortfall * 0.4),
         1
     )
 

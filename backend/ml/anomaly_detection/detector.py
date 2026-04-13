@@ -115,5 +115,102 @@ class AnomalyDetector:
                         "industrial": ind_reg
                     }
                 })
+        return anomalies
+
+    def detect_inventory_anomalies(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Detects inventory anomalies (Stockouts vs Waste) using isolation forest.
+        """
+        if not data:
+            return []
+            
+        df = pd.DataFrame(data)
+        features = ['quantity_on_hand', 'reorder_point', 'stock_health_pct']
         
+        # Ensure numeric conversion
+        for f in features:
+            if f in df.columns:
+                df[f] = pd.to_numeric(df[f], errors='coerce').fillna(0)
+            else:
+                df[f] = 0
+                
+        # Fit and Predict
+        if len(df) < 5:
+            return []
+            
+        self.model.fit(df[features])
+        preds = self.model.predict(df[features])
+        scores = self.model.decision_function(df[features])
+        
+        anomalies = []
+        for i, status in enumerate(preds):
+            if status == -1:
+                row = data[i]
+                qoh = float(df.iloc[i]['quantity_on_hand'])
+                rp = float(df.iloc[i]['reorder_point'])
+                
+                title = "INVENTORY DISRUPTION"
+                severity = "warning"
+                
+                if qoh < rp:
+                    title = "CRITICAL STOCKOUT RISK"
+                    severity = "critical"
+                elif qoh > (rp * 10):
+                    title = "INVENTORY WASTE ANOMALY"
+                    severity = "warning"
+                    
+                anomalies.append({
+                    "id": f"inv_{i}",
+                    "entity_id": row.get('sku_id') or row.get('product_id'),
+                    "entity_type": "inventory",
+                    "severity": severity,
+                    "title": title,
+                    "message": f"Stock level ({qoh}) is non-compliant with safety threshold ({rp}).",
+                    "anomaly_z_score": round(abs(scores[i]) * 10, 2),
+                    "location": row.get('facility_name') or "Global Node"
+                })
+        return anomalies
+
+    def detect_shipment_anomalies(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Flags anomalies where high-reliability carriers exhibit delay friction.
+        """
+        if not data:
+            return []
+            
+        df = pd.DataFrame(data)
+        
+        # Status encoding: DELAYED=2, ON_TIME=1, PENDING=0
+        status_map = {"DELAYED": 2, "ON_TIME": 1, "PENDING": 0}
+        df['status_encoded'] = df['status'].map(lambda x: status_map.get(x, 0))
+        df['carrier_risk_score'] = pd.to_numeric(df['carrier_risk_score'], errors='coerce').fillna(50)
+        
+        features = ['carrier_risk_score', 'status_encoded']
+        
+        if len(df) < 5:
+            return []
+            
+        self.model.fit(df[features])
+        preds = self.model.predict(df[features])
+        scores = self.model.decision_function(df[features])
+        
+        anomalies = []
+        for i, status in enumerate(preds):
+            if status == -1:
+                row = data[i]
+                risk = float(df.iloc[i]['carrier_risk_score'])
+                ship_status = row.get('status')
+                
+                # Causal logic: High priority / Low risk carriers failing
+                if risk < 30 and ship_status == "DELAYED":
+                    anomalies.append({
+                        "id": f"ship_{i}",
+                        "entity_id": row.get('shipment_id'),
+                        "entity_type": "shipment",
+                        "severity": "critical",
+                        "title": "PREMIUM CARRIER FRICTION",
+                        "message": f"Low-risk carrier ({row.get('carrier_name')}) is reporting DELAYED status.",
+                        "anomaly_z_score": round(abs(scores[i]) * 10, 2),
+                        "location": row.get('destination_node')
+                    })
         return anomalies

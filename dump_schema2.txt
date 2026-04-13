@@ -1,0 +1,547 @@
+
+--- Schema: public ---
+Table: demand_signals
+            column_name                data_type
+                     id                  integer
+                country        character varying
+                 region        character varying
+                   year                  integer
+                  month                  integer
+              parameter        character varying
+                   mode        character varying
+             powertrain        character varying
+                  value         double precision
+cumulative_policy_score         double precision
+               category        character varying
+                 source             USER-DEFINED
+           kafka_offset                  integer
+        event_timestamp timestamp with time zone
+             created_at timestamp with time zone
+             updated_at timestamp with time zone
+Table: alerts
+      column_name                data_type
+               id                  integer
+       alert_type             USER-DEFINED
+         severity             USER-DEFINED
+            title        character varying
+          message                     text
+      entity_type        character varying
+        entity_id                  integer
+      entity_name        character varying
+      is_resolved                  boolean
+      resolved_at timestamp with time zone
+      resolved_by        character varying
+auto_action_taken                     text
+       created_at timestamp with time zone
+       updated_at timestamp with time zone
+Table: autonomous_decisions
+              column_name                data_type
+                       id                  integer
+            decision_type             USER-DEFINED
+                    title        character varying
+           trigger_reason                     text
+       input_data_summary                     text
+      ai_confidence_score         double precision
+             action_taken                     text
+        action_parameters                     text
+         estimated_impact                     text
+estimated_cost_saving_usd         double precision
+      related_supplier_id                  integer
+       related_product_id                  integer
+      related_facility_id                  integer
+         related_alert_id                  integer
+                   status             USER-DEFINED
+              executed_at timestamp with time zone
+  was_overridden_by_human                  boolean
+          override_reason                     text
+               created_at timestamp with time zone
+               updated_at timestamp with time zone
+Table: suppliers
+              column_name                data_type
+                       id                  integer
+            supplier_code        character varying
+                     name        character varying
+                  country        character varying
+                     city        character varying
+       materials_supplied                     text
+       product_categories                     text
+           lead_time_days                  integer
+    on_time_delivery_rate         double precision
+            quality_score         double precision
+               risk_score         double precision
+        geopolitical_risk             USER-DEFINED
+supply_concentration_risk         double precision
+       contract_value_usd         double precision
+     contract_expiry_year                  integer
+             is_preferred                  boolean
+                is_active                  boolean
+               created_at timestamp with time zone
+               updated_at timestamp with time zone
+Table: products
+         column_name                data_type
+                  id                  integer
+            sku_code        character varying
+                name        character varying
+         description                     text
+            category             USER-DEFINED
+           chemistry             USER-DEFINED
+        capacity_kwh         double precision
+           voltage_v         double precision
+           weight_kg         double precision
+energy_density_wh_kg         double precision
+          cycle_life                  integer
+           trl_score         double precision
+         supplier_id                  integer
+       unit_cost_usd         double precision
+      is_ev_critical                  boolean
+           is_active                  boolean
+          created_at timestamp with time zone
+          updated_at timestamp with time zone
+Table: inventory
+       column_name                data_type
+                id                  integer
+        product_id                  integer
+       facility_id                  integer
+  quantity_on_hand                  integer
+ quantity_on_order                  integer
+ quantity_reserved                  integer
+     reorder_point                  integer
+economic_order_qty                  integer
+      safety_stock                  integer
+ last_counted_date                     date
+        created_at timestamp with time zone
+        updated_at timestamp with time zone
+Table: facilities
+            column_name                data_type
+                     id                  integer
+          facility_code        character varying
+                   name        character varying
+          facility_type             USER-DEFINED
+                   city        character varying
+                  state        character varying
+                country        character varying
+               latitude         double precision
+              longitude         double precision
+           capacity_gwh         double precision
+current_utilization_pct         double precision
+         is_operational                  boolean
+             created_at timestamp with time zone
+             updated_at timestamp with time zone
+Table: shipments
+            column_name                data_type
+                     id                  integer
+          shipment_code        character varying
+     origin_facility_id                  integer
+destination_facility_id                  integer
+         origin_country        character varying
+    destination_country        character varying
+             product_id                  integer
+            supplier_id                  integer
+               quantity                  integer
+        cargo_value_usd         double precision
+         transport_mode             USER-DEFINED
+                carrier        character varying
+                 status             USER-DEFINED
+           departure_dt timestamp with time zone
+   estimated_arrival_dt timestamp with time zone
+      actual_arrival_dt timestamp with time zone
+      route_distance_km         double precision
+     transport_cost_usd         double precision
+           delay_reason                     text
+             created_at timestamp with time zone
+             updated_at timestamp with time zone
+Table: vahan_fuel_till_today
+ column_name data_type
+           0      text
+           1      text
+extracted_at      text
+Table: vahan_maker_till_today
+ column_name data_type
+       maker      text
+       total      text
+extracted_at      text
+Table: vahan_fuel_2026
+ column_name data_type
+           0      text
+           1      text
+extracted_at      text
+Table: vahan_maker_2026
+ column_name data_type
+   maker2026      text
+       total      text
+extracted_at      text
+Table: vahan_fuel_2025
+ column_name data_type
+           0      text
+           1      text
+extracted_at      text
+Table: vahan_maker_2025
+ column_name data_type
+   maker2025      text
+       total      text
+extracted_at      text
+Table: vahan_fuel_2024
+ column_name data_type
+           0      text
+           1      text
+extracted_at      text
+Table: vahan_maker_2024
+ column_name data_type
+   maker2024      text
+       total      text
+extracted_at      text
+Table: vahan_fuel_2023
+ column_name data_type
+           0      text
+           1      text
+extracted_at      text
+Table: vahan_maker_2023
+ column_name data_type
+   maker2023      text
+       total      text
+extracted_at      text
+Table: vahan_fuel_2022
+ column_name data_type
+           0      text
+           1      text
+extracted_at      text
+Table: vahan_maker_2022
+ column_name data_type
+   maker2022      text
+       total      text
+extracted_at      text
+
+--- Schema: vahan4dashboard ---
+Table: vahan_vehicle_registrations_by_fuel_type
+  column_name        data_type
+           id           bigint
+         date             text
+   state_name             text
+   state_code           bigint
+  office_name             text
+  office_code             text
+    fuel_type             text
+     category             text
+registrations double precision
+Table: vahan_vehicle_registrations_by_maker
+  column_name        data_type
+           id           bigint
+         date             text
+   state_name             text
+   state_code           bigint
+  office_name             text
+  office_code             text
+maker_company             text
+     category             text
+registrations double precision
+Table: vahan_vehicle_registrations_by_norm
+  column_name        data_type
+           id           bigint
+         date             text
+   state_name             text
+   state_code           bigint
+  office_name             text
+  office_code             text
+    norm_type             text
+     category             text
+registrations double precision
+Table: vahan_vehicle_registrations_by_vehicle_category
+  column_name        data_type
+           id           bigint
+         date             text
+   state_name             text
+   state_code           bigint
+  office_name             text
+  office_code             text
+ vehicle_type             text
+     category             text
+registrations double precision
+Table: vahan_vehicle_registrations_by_vehicle_class
+  column_name        data_type
+           id           bigint
+         date             text
+   state_name             text
+   state_code           bigint
+  office_name             text
+  office_code             text
+   class_type             text
+     category             text
+registrations double precision
+
+--- Schema: import ---
+Table: imports_at_principal_commodity_level
+  column_name        data_type
+           id           bigint
+        month             text
+   state_name             text
+   state_code           bigint
+         port             text
+      country             text
+      pc_code             text
+    commodity             text
+        units             text
+     quantity double precision
+dollars_value double precision
+    inr_value double precision
+
+--- Schema: export ---
+Table: exports_at_principal_commodity_level
+  column_name        data_type
+           id           bigint
+        month             text
+   state_name             text
+   state_code           bigint
+         port             text
+      country             text
+      pc_code             text
+    commodity             text
+        units             text
+     quantity double precision
+dollars_value double precision
+    inr_value double precision
+
+--- Schema: port_level_exports_and_imports ---
+
+--- Schema: imports ---
+Table: imports_from_african_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: imports_from_american_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: imports_from_antarctica_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code double precision
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: imports_from_asian_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: imports_from_european_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: imports_from_oceanic_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: imports_from_unspecified_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code double precision
+   country_code double precision
+         region             text
+    region_code double precision
+     sub_region             text
+sub_region_code double precision
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+
+--- Schema: exports ---
+Table: exports_to_african_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: exports_to_american_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: exports_to_antartica_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code double precision
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: exports_to_asian_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: exports_to_european_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: exports_to_oceanic_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code             text
+   country_code           bigint
+         region             text
+    region_code           bigint
+     sub_region             text
+sub_region_code           bigint
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+Table: exports_to_unspecified_countries
+    column_name        data_type
+             id           bigint
+           date             text
+   country_name             text
+   alpha_3_code double precision
+   country_code double precision
+         region             text
+    region_code double precision
+     sub_region             text
+sub_region_code double precision
+        hs_code           bigint
+      commodity             text
+           unit             text
+       value_qt double precision
+       value_rs double precision
+       value_dl double precision
+
+--- Schema: pg_toast ---

@@ -1,5 +1,6 @@
 """
-NEXUS-SCM | FastAPI Application Entry Point - TITAN V4 SOVEREIGN ALIGNMENT
+NEXUS-SCM | Titan V4 SOVEREIGN HUB [REL_4.2_STABLE]
+Application Entry Point - TITAN V4 SOVEREIGN ALIGNMENT
 """
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -20,6 +21,7 @@ from backend.api.routes_logistics import router as logistics_router
 from backend.api.routes_ingestion import router as ingestion_router
 from backend.api.routes_agentic import router as agentic_router
 from backend.api.routes_reports import router as reports_router
+from backend.api.routes_analytics import router as analytics_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,7 +59,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # ─── CORS ──────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all for local dev to prevent blocking the Titan UI
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,10 +76,11 @@ app.include_router(logistics_router, prefix=PREFIX)
 app.include_router(ingestion_router, prefix=PREFIX)
 
 # Intelligence & Analysis Anchors (Explicitly mapped for Nexu-UI)
-app.include_router(forecast_router, prefix="/api")
-app.include_router(risk_router, prefix="/api")
-app.include_router(agentic_router, prefix="/api", tags=["Agentic Brain"])
-app.include_router(reports_router, prefix="/api", tags=["Executive Summary"])
+app.include_router(forecast_router, prefix=PREFIX)
+app.include_router(risk_router, prefix=PREFIX)
+app.include_router(agentic_router, prefix=PREFIX, tags=["Agentic Brain"])
+app.include_router(reports_router, prefix=PREFIX, tags=["Executive Summary"])
+app.include_router(analytics_router, prefix=PREFIX)
 
 
 # ─── Health Check ──────────────────────────────────────────────

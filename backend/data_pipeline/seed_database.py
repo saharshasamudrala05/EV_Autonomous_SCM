@@ -12,7 +12,6 @@ Run: python data_pipeline/seed_database.py
 """
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from datetime import datetime, timedelta, timezone, date
 import os
@@ -25,13 +24,44 @@ def rprint(msg=""):
     clean = re.sub(r'\[/?[^\]]*\]', '', str(msg))
     print(clean)
 
-from core.database import SessionLocal, create_all_tables, check_connection
-from models.supplier import Supplier, GeopoliticalRisk
-from models.product_sku import ProductSKU, BatteryChemistry, ProductCategory
-from models.warehouse import Facility, FacilityType, Inventory
-from models.shipment import Shipment, ShipmentStatus, TransportMode
-from models.alert import Alert, AlertType, AlertSeverity
-from models.autonomous_decision import AutonomousDecision, DecisionType, DecisionStatus
+from backend.core.database import SessionLocal, create_all_tables, check_connection
+from backend.models.supplier import Supplier, GeopoliticalRisk
+from backend.models.product_sku import ProductSKU, BatteryChemistry, ProductCategory, BatteryTechProfile
+from backend.models.warehouse import Facility, FacilityType, Inventory
+from backend.models.shipment import Shipment, ShipmentStatus, TransportMode
+from backend.models.alert import Alert, AlertType, AlertSeverity
+from backend.models.autonomous_decision import AutonomousDecision, DecisionType, DecisionStatus
+
+BATTERY_TECH_PROFILES = [
+    {
+        "name": "Lithium-Ion (NMC)",
+        "trl": 9,
+        "capex_per_gwh": 80e6,
+        "opex_rate": 0.03,
+        "material_cost_per_kwh": 115.0 
+    },
+    {
+        "name": "Sodium-Ion",
+        "trl": 7,
+        "capex_per_gwh": 100e6,
+        "opex_rate": 0.04,
+        "material_cost_per_kwh": 65.0 
+    },
+    {
+        "name": "Lithium-Iron-Phosphate (LFP)",
+        "trl": 9,
+        "capex_per_gwh": 70e6,
+        "opex_rate": 0.03,
+        "material_cost_per_kwh": 95.0
+    },
+    {
+        "name": "Solid-State Batteries",
+        "trl": 4, 
+        "capex_per_gwh": 150e6,
+        "opex_rate": 0.05,
+        "material_cost_per_kwh": 130.0
+    }
+]
 
 now = datetime.now(timezone.utc)
 
@@ -626,8 +656,19 @@ def seed():
         # ── Check if already seeded ──────────────────────────
         if db.query(Supplier).count() > 0:
             rprint("[!] Database already seeded. Skipping to avoid duplicates.")
-            rprint("    To reseed: DROP the nexus_scm database and rerun.")
+            if db.query(BatteryTechProfile).count() == 0:
+                 rprint("[+] Backfilling Battery Tech Profiles...")
+                 tech_objs = [BatteryTechProfile(**t) for t in BATTERY_TECH_PROFILES]
+                 db.add_all(tech_objs)
+                 db.commit()
             return
+
+        # ── Seed Tech Profiles ────────────────────────────────
+        rprint("[+] Seeding Battery Tech Profiles...")
+        tech_objs = [BatteryTechProfile(**t) for t in BATTERY_TECH_PROFILES]
+        db.add_all(tech_objs)
+        db.flush()
+        rprint(f"    OK: {len(tech_objs)} tech profiles added")
 
         # ── Seed Suppliers ────────────────────────────────────
         rprint("[+] Seeding Suppliers...")
@@ -716,6 +757,7 @@ def seed():
         rprint(f"   Shipments   : {len(ship_objs)}")
         rprint(f"   Alerts      : {len(alert_objs)}")
         rprint(f"   AI Decisions: {len(decision_objs)}")
+        rprint(f"   Tech Profiles: {len(tech_objs)}")
         rprint("===========================================")
         rprint("Next: uvicorn main:app --reload")
 
